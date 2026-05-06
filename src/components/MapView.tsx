@@ -1,10 +1,12 @@
-import { divIcon } from "leaflet";
+import { useEffect, useMemo } from "react";
+import { divIcon, type LatLngTuple } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer } from "react-leaflet/MapContainer";
 import { Marker } from "react-leaflet/Marker";
 import { Polyline } from "react-leaflet/Polyline";
 import { Popup } from "react-leaflet/Popup";
 import { TileLayer } from "react-leaflet/TileLayer";
+import { useMap } from "react-leaflet/hooks";
 import { buildRoutePoints } from "../domain/route";
 import type { PhotoAsset } from "../domain/types";
 
@@ -22,13 +24,41 @@ const hasCoordinates = (
 const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const tileAttribution = "&copy; OpenStreetMap contributors";
 
+const MapViewportSync = ({ positions }: { positions: LatLngTuple[] }) => {
+  const map = useMap();
+  const positionKey = positions.map((position) => position.join(",")).join("|");
+
+  useEffect(() => {
+    if (positions.length === 0) {
+      return;
+    }
+
+    if (positions.length === 1) {
+      map.setView(positions[0], 12);
+      return;
+    }
+
+    map.fitBounds(positions, { padding: [24, 24] });
+  }, [map, positionKey]);
+
+  return null;
+};
+
 export const MapView = ({ photos, selectedPhotoId, onSelectPhoto }: MapViewProps) => {
-  const geotaggedPhotos = photos.filter(hasCoordinates);
-  const routePositions = buildRoutePoints(photos).map((point) => [
-    point.latitude,
-    point.longitude,
-  ]) as [number, number][];
-  const mapCenter: [number, number] =
+  const geotaggedPhotos = useMemo(() => photos.filter(hasCoordinates), [photos]);
+  const geotaggedPositions: LatLngTuple[] = useMemo(
+    () => geotaggedPhotos.map((photo) => [photo.latitude, photo.longitude]),
+    [geotaggedPhotos],
+  );
+  const routePositions = useMemo(
+    () =>
+      buildRoutePoints(photos).map((point) => [
+        point.latitude,
+        point.longitude,
+      ]) as LatLngTuple[],
+    [photos],
+  );
+  const mapCenter: LatLngTuple =
     geotaggedPhotos.length > 0
       ? [geotaggedPhotos[0].latitude, geotaggedPhotos[0].longitude]
       : [35.8617, 104.1954];
@@ -41,6 +71,7 @@ export const MapView = ({ photos, selectedPhotoId, onSelectPhoto }: MapViewProps
         scrollWheelZoom={false}
         zoom={geotaggedPhotos.length > 0 ? 12 : 4}
       >
+        <MapViewportSync positions={geotaggedPositions} />
         <TileLayer attribution={tileAttribution} url={tileUrl} />
         {routePositions.length > 1 ? (
           <Polyline className="map-route-line" positions={routePositions} />

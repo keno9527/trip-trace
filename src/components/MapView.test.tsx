@@ -7,6 +7,10 @@ import { MapView } from "./MapView";
 const divIcon = vi.hoisted(() =>
   vi.fn((options: { className?: string } = {}) => ({ options })),
 );
+const mapControls = vi.hoisted(() => ({
+  fitBounds: vi.fn(),
+  setView: vi.fn(),
+}));
 
 vi.mock("leaflet", () => ({
   default: { divIcon },
@@ -58,6 +62,10 @@ vi.mock("react-leaflet/Popup", () => ({
 
 vi.mock("react-leaflet/TileLayer", () => ({
   TileLayer: ({ url }: { url: string }) => <div data-testid="tile-layer" data-url={url} />,
+}));
+
+vi.mock("react-leaflet/hooks", () => ({
+  useMap: () => mapControls,
 }));
 
 const makePhoto = (overrides: Partial<PhotoAsset> = {}): PhotoAsset => ({
@@ -156,6 +164,46 @@ describe("MapView", () => {
     await user.click(screen.getByTestId("photo-marker"));
 
     expect(onSelectPhoto).toHaveBeenCalledWith("photo-click");
+  });
+
+  it("requests a viewport update when geotagged photos change", () => {
+    const { rerender } = render(
+      <MapView
+        photos={[
+          makePhoto({ id: "photo-missing", latitude: undefined, longitude: undefined }),
+        ]}
+        onSelectPhoto={() => undefined}
+      />,
+    );
+
+    expect(mapControls.fitBounds).not.toHaveBeenCalled();
+    expect(mapControls.setView).not.toHaveBeenCalled();
+
+    rerender(
+      <MapView
+        photos={[
+          makePhoto({
+            id: "photo-first",
+            latitude: 30.24,
+            longitude: 120.16,
+          }),
+          makePhoto({
+            id: "photo-second",
+            latitude: 30.26,
+            longitude: 120.18,
+          }),
+        ]}
+        onSelectPhoto={() => undefined}
+      />,
+    );
+
+    expect(mapControls.fitBounds).toHaveBeenCalledWith(
+      [
+        [30.24, 120.16],
+        [30.26, 120.18],
+      ],
+      { padding: [24, 24] },
+    );
   });
 
   it("shows a Chinese privacy notice for remote map tiles", () => {
