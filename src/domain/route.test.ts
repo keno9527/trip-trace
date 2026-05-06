@@ -70,6 +70,48 @@ describe("buildRoutePoints", () => {
     ]);
   });
 
+  it("sorts equal capturedAt route points by photoId ascending", () => {
+    const routePoints = buildRoutePoints([
+      makePhoto({
+        id: "z-photo",
+        latitude: 39.9042,
+        longitude: 116.4074,
+        capturedAt: "2026-05-06T09:00:00.000Z",
+      }),
+      makePhoto({
+        id: "a-photo",
+        latitude: 31.2304,
+        longitude: 121.4737,
+        capturedAt: "2026-05-06T09:00:00.000Z",
+      }),
+    ]);
+
+    expect(routePoints.map((point) => point.photoId)).toEqual([
+      "a-photo",
+      "z-photo",
+    ]);
+  });
+
+  it("retains route points with zero latitude and longitude", () => {
+    const routePoints = buildRoutePoints([
+      makePhoto({
+        id: "zero-coordinates",
+        latitude: 0,
+        longitude: 0,
+        capturedAt: "2026-05-06T09:00:00.000Z",
+      }),
+    ]);
+
+    expect(routePoints).toEqual([
+      {
+        photoId: "zero-coordinates",
+        latitude: 0,
+        longitude: 0,
+        capturedAt: "2026-05-06T09:00:00.000Z",
+      },
+    ]);
+  });
+
   it("returns only photoId, latitude, longitude, and capturedAt", () => {
     const [routePoint] = buildRoutePoints([
       makePhoto({

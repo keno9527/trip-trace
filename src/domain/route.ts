@@ -27,8 +27,14 @@ export const buildRoutePoints = (photos: PhotoAsset[]): RoutePoint[] =>
       longitude: photo.longitude,
       capturedAt: photo.capturedAt,
     }))
-    .sort(
-      (left, right) =>
+    .sort((left, right) => {
+      const timestampDifference =
         new Date(left.capturedAt).getTime() -
-        new Date(right.capturedAt).getTime(),
-    );
+        new Date(right.capturedAt).getTime();
+
+      if (timestampDifference !== 0) {
+        return timestampDifference;
+      }
+
+      return left.photoId.localeCompare(right.photoId);
+    });
