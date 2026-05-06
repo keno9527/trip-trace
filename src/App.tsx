@@ -39,6 +39,8 @@ export default function App() {
   const [importError, setImportError] = useState<string>();
   const [lastImportSummary, setLastImportSummary] = useState<ImportSummaryData>();
   const hasLocalTripChanges = useRef(false);
+  const selectedTripIdRef = useRef<string | undefined>(undefined);
+  const photoRefreshTokenRef = useRef(0);
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId);
   const visiblePhotos = filterPhotosByMembers(photos, selectedMemberIds);
   const selectedVisiblePhotoId =
@@ -46,6 +48,8 @@ export default function App() {
       ? selectedPhotoId
       : undefined;
   const selectedPhotoIds = selectedVisiblePhotoId ? [selectedVisiblePhotoId] : [];
+
+  selectedTripIdRef.current = selectedTripId;
 
   useEffect(() => {
     let isMounted = true;
@@ -76,6 +80,11 @@ export default function App() {
 
   useEffect(() => {
     let isMounted = true;
+    const refreshToken = ++photoRefreshTokenRef.current;
+
+    setImportState("idle");
+    setImportError(undefined);
+    setLastImportSummary(undefined);
 
     if (!selectedTripId) {
       setPhotos([]);
@@ -87,13 +96,21 @@ export default function App() {
 
     listPhotosByTrip(selectedTripId)
       .then((storedPhotos) => {
-        if (isMounted) {
+        if (
+          isMounted &&
+          photoRefreshTokenRef.current === refreshToken &&
+          selectedTripIdRef.current === selectedTripId
+        ) {
           setPhotos(storedPhotos);
           setSelectedPhotoId(undefined);
         }
       })
       .catch(() => {
-        if (isMounted) {
+        if (
+          isMounted &&
+          photoRefreshTokenRef.current === refreshToken &&
+          selectedTripIdRef.current === selectedTripId
+        ) {
           setPhotos([]);
           setSelectedPhotoId(undefined);
         }
@@ -159,6 +176,8 @@ export default function App() {
   };
 
   const handleImportFiles = async (tripId: string, files: FileList) => {
+    const importToken = ++photoRefreshTokenRef.current;
+
     setImportState("importing");
     setImportError(undefined);
 
@@ -168,10 +187,18 @@ export default function App() {
       await savePhotos(result.photos);
       const storedPhotos = await listPhotosByTrip(tripId);
 
+      if (photoRefreshTokenRef.current !== importToken || selectedTripIdRef.current !== tripId) {
+        return;
+      }
+
       setPhotos(storedPhotos);
       setLastImportSummary(result.summary);
       setImportState("idle");
     } catch {
+      if (photoRefreshTokenRef.current !== importToken || selectedTripIdRef.current !== tripId) {
+        return;
+      }
+
       setImportError("照片导入失败，请重试。");
       setImportState("error");
     }

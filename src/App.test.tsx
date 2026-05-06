@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -84,6 +84,17 @@ const makePhoto = (overrides: Partial<PhotoAsset> = {}): PhotoAsset => ({
   createdAt: "2026-05-06T10:00:00.000Z",
   ...overrides,
 });
+
+const createDeferred = <T,>() => {
+  let resolve: (value: T) => void = () => undefined;
+  let reject: (error: unknown) => void = () => undefined;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, reject, resolve };
+};
 
 beforeEach(() => {
   mapViewSnapshots.length = 0;
@@ -200,5 +211,91 @@ describe("App", () => {
 
     expect(screen.getByRole("button", { name: "灵隐寺.jpg" })).toHaveAttribute("aria-current", "true");
     expect(mapViewSnapshots.at(-1)?.selectedPhotoId).toBe("photo-2");
+  });
+
+  it("does not let a stale selected-trip photo load overwrite imported photos", async () => {
+    const user = userEvent.setup();
+    const trip = makeTrip();
+    const importedPhoto = makePhoto({ id: "photo-imported", fileName: "雷峰塔.jpg" });
+    const initialLoad = createDeferred<PhotoAsset[]>();
+
+    mockedListTrips.mockResolvedValue([trip]);
+    mockedListPhotosByTrip
+      .mockReturnValueOnce(initialLoad.promise)
+      .mockResolvedValueOnce([importedPhoto]);
+    mockedImportPhotos.mockResolvedValue({
+      photos: [importedPhoto],
+      summary: {
+        importedCount: 1,
+        geotaggedCount: 1,
+        missingLocationCount: 0,
+        parseFailureCount: 0,
+        skippedCount: 0,
+      },
+    });
+
+    render(<App />);
+
+    await user.upload(
+      await screen.findByLabelText("导入照片"),
+      new File(["photo"], "雷峰塔.jpg", { type: "image/jpeg" }),
+    );
+
+    expect(await screen.findByRole("button", { name: "雷峰塔.jpg" })).toBeInTheDocument();
+
+    await act(async () => {
+      initialLoad.resolve([]);
+    });
+
+    expect(screen.getByRole("button", { name: "雷峰塔.jpg" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "地图照片：雷峰塔.jpg" })).toBeInTheDocument();
+  });
+
+  it("does not apply an old trip import result after switching trips", async () => {
+    const user = userEvent.setup();
+    const firstTrip = makeTrip({ id: "trip-a", name: "杭州亲子游" });
+    const secondTrip = makeTrip({ id: "trip-b", name: "上海周末游" });
+    const importedPhoto = makePhoto({
+      id: "photo-trip-a",
+      tripId: firstTrip.id,
+      fileName: "西湖旧导入.jpg",
+    });
+    const importResult = createDeferred<Awaited<ReturnType<typeof importPhotos>>>();
+
+    mockedListTrips.mockResolvedValue([firstTrip, secondTrip]);
+    mockedListPhotosByTrip.mockImplementation((tripId) => {
+      if (tripId === firstTrip.id) {
+        return Promise.resolve([importedPhoto]);
+      }
+
+      return Promise.resolve([]);
+    });
+    mockedImportPhotos.mockReturnValue(importResult.promise);
+
+    render(<App />);
+
+    await user.upload(
+      await screen.findByLabelText("导入照片"),
+      new File(["photo"], "西湖旧导入.jpg", { type: "image/jpeg" }),
+    );
+    await user.click(screen.getByRole("button", { name: "上海周末游" }));
+
+    await act(async () => {
+      importResult.resolve({
+        photos: [importedPhoto],
+        summary: {
+          importedCount: 1,
+          geotaggedCount: 1,
+          missingLocationCount: 0,
+          parseFailureCount: 0,
+          skippedCount: 0,
+        },
+      });
+    });
+
+    expect(screen.queryByRole("button", { name: "西湖旧导入.jpg" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "地图照片：西湖旧导入.jpg" })).not.toBeInTheDocument();
+    expect(screen.getByText("上海周末游 的地图将在这里展示。")).toBeInTheDocument();
+    expect(screen.getAllByText("0")).toHaveLength(5);
   });
 });
