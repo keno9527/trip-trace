@@ -87,6 +87,9 @@ export const TripSidebar = ({
 
       <section className="import-entry" aria-labelledby="import-entry-title">
         <h2 id="import-entry-title">照片导入</h2>
+        <p className="storage-notice">
+          仅保存缩略图和展示尺寸副本；浏览器本地数据可能受容量限制或被清理，请在应用外保留原图备份。
+        </p>
         {selectedTrip && onImportFiles ? (
           <label className="file-import-label">
             <span>导入照片</span>

@@ -46,6 +46,9 @@ describe("TripSidebar", () => {
 
     expect(screen.getByText("还没有旅行")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "创建第一趟旅行" })).toBeInTheDocument();
+    expect(
+      screen.getByText("仅保存缩略图和展示尺寸副本；浏览器本地数据可能受容量限制或被清理，请在应用外保留原图备份。"),
+    ).toBeInTheDocument();
   });
 
   it("creates a trip from an entered name and shows the import entry", async () => {
