@@ -38,6 +38,13 @@ button:hover {
   background: #1d4ed8;
 }
 
+button:disabled {
+  border-color: #cbd5e1;
+  background: #e2e8f0;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
 input {
   width: 100%;
   border: 1px solid #cbd5e1;
@@ -98,12 +105,19 @@ input {
 .trip-list-section,
 .import-entry,
 .timeline-workspace,
-.import-summary {
+.import-summary,
+.timeline-panel,
+.timeline-date-group,
+.member-tags,
+.member-create-form,
+.member-filter-section,
+.member-apply-section {
   display: grid;
   gap: 12px;
 }
 
-.create-trip-form label {
+.create-trip-form label,
+.member-create-form label {
   color: #334155;
   font-weight: 600;
 }
@@ -111,7 +125,8 @@ input {
 .trip-list-section h2,
 .import-entry h2,
 .timeline-workspace h2,
-.import-summary h2 {
+.import-summary h2,
+.member-tags h2 {
   color: #0f172a;
   font-size: 18px;
 }
@@ -171,6 +186,70 @@ input {
 .timeline-workspace {
   align-content: start;
   padding: 24px;
+}
+
+.timeline-panel {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 20px;
+}
+
+.timeline-date-group h3 {
+  margin: 0;
+  color: #334155;
+  font-size: 15px;
+}
+
+.timeline-photo-list,
+.member-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeline-photo,
+.member-chip,
+.member-apply-button {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.timeline-photo {
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+}
+
+.timeline-photo:hover,
+.timeline-photo.is-selected,
+.member-chip:hover,
+.member-chip.is-selected,
+.member-apply-button:hover {
+  border-color: #2563eb;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.member-tags {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 20px;
+}
+
+.member-create-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.member-chip,
+.member-apply-button {
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+.member-selection-copy {
+  margin: 0;
+  color: #64748b;
 }
 
 .import-summary {

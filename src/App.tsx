@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ImportSummary } from "./components/ImportSummary";
+import { MemberTags } from "./components/MemberTags";
+import { TimelinePanel } from "./components/TimelinePanel";
 import { TripSidebar } from "./components/TripSidebar";
-import type { Trip } from "./domain/types";
+import { filterPhotosByMembers } from "./domain/members";
+import type { Member, PhotoAsset, Trip } from "./domain/types";
 import { listTrips, saveTrip } from "./storage/repositories";
 
 const emptyImportSummary = {
@@ -20,12 +23,20 @@ const createTripId = (): string => {
   return `trip-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
+const memberColors = ["#2563eb", "#16a34a", "#dc2626", "#9333ea"];
+
 export default function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string>();
+  const [photos, setPhotos] = useState<PhotoAsset[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string>();
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [tripLoadState, setTripLoadState] = useState<"loading" | "ready" | "error">("loading");
   const hasLocalTripChanges = useRef(false);
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId);
+  const visiblePhotos = filterPhotosByMembers(photos, selectedMemberIds);
+  const selectedPhotoIds = selectedPhotoId ? [selectedPhotoId] : [];
 
   useEffect(() => {
     let isMounted = true;
@@ -70,6 +81,44 @@ export default function App() {
     setSelectedTripId(trip.id);
   };
 
+  const handleCreateMember = (name: string) => {
+    const now = new Date().toISOString();
+    const member: Member = {
+      id: `member-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name,
+      color: memberColors[members.length % memberColors.length],
+      avatarInitial: name.slice(0, 1),
+      createdAt: now,
+    };
+
+    setMembers((currentMembers) => [...currentMembers, member]);
+  };
+
+  const handleToggleMemberFilter = (memberId: string) => {
+    setSelectedMemberIds((currentMemberIds) =>
+      currentMemberIds.includes(memberId)
+        ? currentMemberIds.filter((currentMemberId) => currentMemberId !== memberId)
+        : [...currentMemberIds, memberId],
+    );
+  };
+
+  const handleApplyMemberToSelection = (memberId: string, photoIds: string[]) => {
+    const selectedPhotoIdSet = new Set(photoIds);
+
+    setPhotos((currentPhotos) =>
+      currentPhotos.map((photo) => {
+        if (!selectedPhotoIdSet.has(photo.id) || photo.memberIds.includes(memberId)) {
+          return photo;
+        }
+
+        return {
+          ...photo,
+          memberIds: [...photo.memberIds, memberId],
+        };
+      }),
+    );
+  };
+
   return (
     <main className="app-shell">
       <TripSidebar
@@ -90,7 +139,23 @@ export default function App() {
 
       <section className="timeline-workspace" aria-labelledby="timeline-title">
         <h2 id="timeline-title">时间轴</h2>
-        <p>{selectedTrip ? "导入照片后会按拍摄日期显示在这里。" : "暂无旅行。"}</p>
+        <MemberTags
+          members={members}
+          selectedMemberIds={selectedMemberIds}
+          selectedPhotoIds={selectedPhotoIds}
+          onCreateMember={handleCreateMember}
+          onToggleMemberFilter={handleToggleMemberFilter}
+          onApplyMemberToSelection={handleApplyMemberToSelection}
+        />
+        {selectedTrip ? (
+          <TimelinePanel
+            photos={visiblePhotos}
+            selectedPhotoId={selectedPhotoId}
+            onSelectPhoto={setSelectedPhotoId}
+          />
+        ) : (
+          <p className="empty-copy">暂无旅行。</p>
+        )}
         <ImportSummary summary={emptyImportSummary} />
       </section>
     </main>
