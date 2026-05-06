@@ -39,9 +39,14 @@ export const TimelinePanel = ({
                 }
                 key={photo.id}
                 aria-current={photo.id === selectedPhotoId ? "true" : undefined}
+                aria-label={photo.fileName}
                 onClick={() => onSelectPhoto(photo.id)}
               >
-                {photo.fileName}
+                <span
+                  className="timeline-photo-thumb"
+                  aria-label={`${photo.fileName} 缩略图占位`}
+                />
+                <span className="timeline-photo-name">{photo.fileName}</span>
               </button>
             ))}
           </div>

@@ -38,6 +38,17 @@ describe("TimelinePanel", () => {
     expect(within(secondDateGroup).getByRole("button", { name: "夜游.jpg" })).toBeInTheDocument();
   });
 
+  it("shows a thumbnail placeholder for each photo", () => {
+    render(
+      <TimelinePanel
+        photos={[makePhoto({ id: "photo-thumb", fileName: "缩略图测试.jpg" })]}
+        onSelectPhoto={() => undefined}
+      />,
+    );
+
+    expect(screen.getByLabelText("缩略图测试.jpg 缩略图占位")).toBeInTheDocument();
+  });
+
   it("shows unknown-time photos under the Chinese unknown group", () => {
     render(
       <TimelinePanel

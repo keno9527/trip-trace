@@ -215,9 +215,25 @@ input {
 }
 
 .timeline-photo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   min-height: 44px;
   text-align: left;
+}
+
+.timeline-photo-thumb {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #e2e8f0;
+}
+
+.timeline-photo-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .timeline-photo:hover,
