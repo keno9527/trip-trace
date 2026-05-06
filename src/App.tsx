@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ImportSummary } from "./components/ImportSummary";
+import { MapView } from "./components/MapView";
 import { MemberTags } from "./components/MemberTags";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { TripSidebar } from "./components/TripSidebar";
@@ -133,12 +134,17 @@ export default function App() {
       />
 
       <section className="map-workspace" aria-labelledby="app-title">
-        <div>
+        <div className="map-header">
           <h1 id="app-title">Trip Trace</h1>
           {tripLoadState === "loading" ? <p>正在加载本地旅行...</p> : null}
           {tripLoadState === "error" ? <p role="alert">旅行加载失败，请稍后重试。</p> : null}
           <p>{selectedTrip ? `${selectedTrip.name} 的地图将在这里展示。` : "创建旅行后开始整理家庭回忆。"}</p>
         </div>
+        <MapView
+          photos={visiblePhotos}
+          selectedPhotoId={selectedVisiblePhotoId}
+          onSelectPhoto={setSelectedPhotoId}
+        />
       </section>
 
       <section className="timeline-workspace" aria-labelledby="timeline-title">
