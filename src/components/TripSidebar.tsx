@@ -7,7 +7,7 @@ interface TripSidebarProps {
   selectedTripId?: string;
   onSelectTrip: (tripId: string) => void;
   onCreateTrip: (name: string) => void | Promise<void>;
-  onImportFiles: (tripId: string, files: FileList) => void;
+  onImportFiles?: (tripId: string, files: FileList) => void;
 }
 
 export const TripSidebar = ({
@@ -35,7 +35,7 @@ export const TripSidebar = ({
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (!selectedTrip || !event.target.files || event.target.files.length === 0) {
+    if (!selectedTrip || !onImportFiles || !event.target.files || event.target.files.length === 0) {
       return;
     }
 
@@ -74,6 +74,7 @@ export const TripSidebar = ({
                 <button
                   type="button"
                   className={trip.id === selectedTripId ? "trip-list-item is-selected" : "trip-list-item"}
+                  aria-current={trip.id === selectedTripId ? "true" : undefined}
                   onClick={() => onSelectTrip(trip.id)}
                 >
                   {trip.name}
@@ -86,11 +87,13 @@ export const TripSidebar = ({
 
       <section className="import-entry" aria-labelledby="import-entry-title">
         <h2 id="import-entry-title">照片导入</h2>
-        {selectedTrip ? (
+        {selectedTrip && onImportFiles ? (
           <label className="file-import-label">
             <span>导入照片</span>
             <input type="file" multiple accept="image/*" aria-label="导入照片" onChange={handleFileChange} />
           </label>
+        ) : selectedTrip ? (
+          <p className="empty-copy">照片导入将在后续步骤接入</p>
         ) : (
           <p className="empty-copy">创建旅行后可以导入照片。</p>
         )}

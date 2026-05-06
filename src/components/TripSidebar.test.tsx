@@ -29,7 +29,6 @@ const renderSidebar = (initialTrips: Trip[] = []) => {
           setTrips([...trips, trip]);
           setSelectedTripId(trip.id);
         }}
-        onImportFiles={() => undefined}
       />
     );
   };
@@ -57,6 +56,17 @@ describe("TripSidebar", () => {
     await user.click(screen.getByRole("button", { name: "创建第一趟旅行" }));
 
     expect(screen.getByRole("button", { name: "杭州亲子游" })).toBeInTheDocument();
-    expect(screen.getByLabelText("导入照片")).toBeInTheDocument();
+    expect(screen.getByText("照片导入将在后续步骤接入")).toBeInTheDocument();
+    expect(screen.queryByLabelText("导入照片")).not.toBeInTheDocument();
+  });
+
+  it("marks the selected trip with an accessible current state", () => {
+    renderSidebar([
+      makeTrip({ id: "trip-1", name: "杭州亲子游" }),
+      makeTrip({ id: "trip-2", name: "上海周末游" }),
+    ]);
+
+    expect(screen.getByRole("button", { name: "杭州亲子游" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("button", { name: "上海周末游" })).not.toHaveAttribute("aria-current");
   });
 });

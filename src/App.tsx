@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImportSummary } from "./components/ImportSummary";
 import { TripSidebar } from "./components/TripSidebar";
 import type { Trip } from "./domain/types";
@@ -23,19 +23,31 @@ const createTripId = (): string => {
 export default function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string>();
+  const [tripLoadState, setTripLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const hasLocalTripChanges = useRef(false);
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId);
 
   useEffect(() => {
     let isMounted = true;
 
-    listTrips().then((storedTrips) => {
-      if (!isMounted) {
-        return;
-      }
+    listTrips()
+      .then((storedTrips) => {
+        if (!isMounted) {
+          return;
+        }
 
-      setTrips(storedTrips);
-      setSelectedTripId((currentTripId) => currentTripId ?? storedTrips[0]?.id);
-    });
+        if (!hasLocalTripChanges.current) {
+          setTrips(storedTrips);
+          setSelectedTripId((currentTripId) => currentTripId ?? storedTrips[0]?.id);
+        }
+
+        setTripLoadState("ready");
+      })
+      .catch(() => {
+        if (isMounted) {
+          setTripLoadState("error");
+        }
+      });
 
     return () => {
       isMounted = false;
@@ -52,6 +64,7 @@ export default function App() {
       memberIds: [],
     };
 
+    hasLocalTripChanges.current = true;
     await saveTrip(trip);
     setTrips((currentTrips) => [...currentTrips, trip]);
     setSelectedTripId(trip.id);
@@ -64,12 +77,13 @@ export default function App() {
         selectedTripId={selectedTripId}
         onSelectTrip={setSelectedTripId}
         onCreateTrip={handleCreateTrip}
-        onImportFiles={() => undefined}
       />
 
       <section className="map-workspace" aria-labelledby="app-title">
         <div>
           <h1 id="app-title">Trip Trace</h1>
+          {tripLoadState === "loading" ? <p>正在加载本地旅行...</p> : null}
+          {tripLoadState === "error" ? <p role="alert">旅行加载失败，请稍后重试。</p> : null}
           <p>{selectedTrip ? `${selectedTrip.name} 的地图将在这里展示。` : "创建旅行后开始整理家庭回忆。"}</p>
         </div>
       </section>
