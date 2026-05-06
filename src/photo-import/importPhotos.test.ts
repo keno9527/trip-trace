@@ -65,7 +65,7 @@ describe("importPhotos", () => {
     expect(result.summary).toEqual({
       importedCount: 3,
       geotaggedCount: 1,
-      missingLocationCount: 1,
+      missingLocationCount: 2,
       parseFailureCount: 1,
       skippedCount: 1,
     });
@@ -121,5 +121,29 @@ describe("importPhotos", () => {
     });
     expect(result.photos).toEqual([]);
     expect(parseExif).not.toHaveBeenCalled();
+  });
+
+  it("counts imported photos without coordinates as missing location", async () => {
+    createThumbnailMock.mockResolvedValue(makeBlob("thumb"));
+    createDisplayImageMock.mockResolvedValue(makeBlob("display"));
+    parseExif.mockResolvedValue({
+      exifStatus: "missing-time",
+    });
+
+    const result = await importPhotos("trip-1", [makeFile("no-exif.jpg")]);
+
+    expect(result.summary).toEqual({
+      importedCount: 1,
+      geotaggedCount: 0,
+      missingLocationCount: 1,
+      parseFailureCount: 0,
+      skippedCount: 0,
+    });
+    expect(result.photos[0]).toMatchObject({
+      fileName: "no-exif.jpg",
+      exifStatus: "missing-time",
+    });
+    expect(result.photos[0].latitude).toBeUndefined();
+    expect(result.photos[0].longitude).toBeUndefined();
   });
 });

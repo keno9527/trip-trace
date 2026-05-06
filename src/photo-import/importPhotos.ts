@@ -42,7 +42,7 @@ const summarizeImportedPhoto = (summary: ImportSummary, exif: ParsedPhotoExif): 
     summary.geotaggedCount += 1;
   }
 
-  if (exif.exifStatus === "missing-gps") {
+  if (exif.latitude === undefined || exif.longitude === undefined) {
     summary.missingLocationCount += 1;
   }
 
