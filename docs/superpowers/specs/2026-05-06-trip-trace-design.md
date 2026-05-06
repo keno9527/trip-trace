@@ -1,63 +1,65 @@
-# Trip Trace Design
+# Trip Trace 设计方案
 
-Date: 2026-05-06
-Status: Draft
+日期：2026-05-06
+状态：草稿
 
-## Goal
+## 目标
 
-Build a Chinese-first, PC-first local web app for recording family trips as a memory map. The first version focuses on importing original iPhone photos, extracting capture time and GPS data from EXIF, and showing the trip as a map with a timeline and family member tags.
+构建一个中文优先、PC 优先、本地优先的旅行轨迹地图 Web 应用，用来记录家庭旅行回忆。第一版重点支持导入 iPhone 原图，从 EXIF 中提取拍摄时间和 GPS 坐标，并以地图、时间轴和家庭成员标签的方式展示一次旅行。
 
-The app is local-first. It does not require accounts, a backend, cloud sync, collaboration, or public sharing in the first version.
+应用第一版不需要账号、不需要后端、不做云同步、不做多人协作，也不提供公开分享页。
 
-"Family collaboration" in the first version means one maintainer organizes the trip and tags family members for shared browsing. It does not mean multi-user editing.
+这里的“家庭协作”在第一版中指：由一个维护者整理旅行记录，并通过家庭成员标签支持全家一起浏览回忆；不代表多人同时编辑。
 
-## Scope
+本项目默认使用中文交互。设计文档、后续实现计划和产品界面文案都应以中文为默认语言；必要的技术名词可以保留英文。
 
-### In Scope
+## 范围
 
-- Create and select trips.
-- Import batches of original iPhone photos from the user's computer.
-- Extract photo capture time and GPS coordinates from EXIF.
-- Show geotagged photos as points on a map.
-- Connect geotagged photos by capture time as a memory route.
-- Show all imported photos in a date-based timeline.
-- Let the user tag photos with family members.
-- Filter photos by family member tags.
-- Persist trips, photo metadata, thumbnails, display-size image copies, and member tags in browser-local storage.
+### 第一版包含
 
-### Out of Scope
+- 创建和选择旅行。
+- 从电脑中批量导入 iPhone 原图。
+- 从照片 EXIF 中提取拍摄时间和 GPS 坐标。
+- 在地图上展示带坐标的照片点位。
+- 按拍摄时间连接带坐标的照片，形成回忆路线。
+- 在按日期分组的时间轴中展示所有已导入照片。
+- 给照片添加家庭成员标签。
+- 按家庭成员标签筛选照片。
+- 在浏览器本地保存旅行、照片元数据、缩略图、展示尺寸图片副本和成员标签。
 
-- Cloud sync.
-- User accounts.
-- Multi-user editing.
-- Public sharing pages.
-- Native iOS photo library access.
-- Real-time GPS recording.
-- GPX, KML, or GeoJSON track import.
-- Full-resolution long-term photo archive guarantees.
-- Advanced manual location repair flows.
-- Map point clustering.
-- Offline or self-hosted map tiles.
+### 第一版不包含
 
-## Product Flow
+- 云同步。
+- 用户账号。
+- 多人编辑。
+- 公开分享页。
+- 原生 iOS 相册访问。
+- 实时 GPS 记录。
+- GPX、KML 或 GeoJSON 轨迹文件导入。
+- 浏览器内全尺寸原图长期归档承诺。
+- 复杂的手动补地点流程。
+- 地图点位聚合。
+- 离线地图瓦片或自托管地图瓦片。
 
-1. The user opens the PC web app in a browser.
-2. If no trip exists, the app shows an empty state with a create-trip action.
-3. The user creates a trip with a name and optional date range.
-4. The user imports a batch of original iPhone photos.
-5. The app parses each file, extracts EXIF capture time and GPS coordinates, and creates a thumbnail or display copy.
-6. The app shows an import summary: imported count, geotagged count, missing-location count, and parse-failure count.
-7. The user browses the trip through a map and a timeline.
-8. Selecting a map point highlights the matching timeline photo. Selecting a timeline photo pans the map to that photo when it has coordinates.
-9. The user can assign member tags to selected photos.
+## 产品流程
 
-## Data Model
+1. 用户在 PC 浏览器中打开应用。
+2. 如果还没有旅行，应用展示空状态，并提供创建旅行入口。
+3. 用户创建一趟旅行，填写旅行名称和可选起止日期。
+4. 用户批量导入 iPhone 原图。
+5. 应用逐个解析文件，从 EXIF 中提取拍摄时间和 GPS 坐标，并生成缩略图或展示尺寸图片副本。
+6. 应用展示导入结果摘要，包括导入数量、带位置数量、缺少位置数量和解析失败数量。
+7. 用户通过地图和时间轴浏览旅行。
+8. 用户点击地图点位时，高亮对应时间轴照片；点击时间轴照片时，如果照片有坐标，地图移动到对应位置。
+9. 用户可以给选中的照片添加家庭成员标签。
+
+## 数据模型
 
 ### Trip
 
-Represents a family trip.
+表示一趟家庭旅行。
 
-Fields:
+字段：
 
 - `id`
 - `name`
@@ -71,9 +73,9 @@ Fields:
 
 ### PhotoAsset
 
-Represents an imported photo and its extracted metadata.
+表示一张已导入照片及其解析出的元数据。
 
-Fields:
+字段：
 
 - `id`
 - `tripId`
@@ -87,15 +89,15 @@ Fields:
 - `memberIds`
 - `createdAt`
 
-Photos without GPS still belong to the trip and appear in the timeline. They do not appear as map points.
+没有 GPS 的照片仍然属于旅行，并出现在时间轴中，但不显示为地图点位。
 
-If EXIF parsing fails but the image can still be decoded, the app imports the photo as an unknown-time, no-location photo and reports the EXIF failure in the import summary. If the file cannot be decoded as an image, the app skips it and reports it as unsupported or unreadable.
+如果 EXIF 解析失败，但图片本身仍可解码，应用应将照片作为“未知时间、无位置”的照片导入，并在导入摘要中报告 EXIF 解析失败。如果文件无法作为图片解码，应用跳过该文件，并报告为不支持或不可读取。
 
 ### Member
 
-Represents a family member tag.
+表示一个家庭成员标签。
 
-Fields:
+字段：
 
 - `id`
 - `name`
@@ -103,105 +105,106 @@ Fields:
 - `avatarInitial`
 - `createdAt`
 
-Photos can have zero or more member tags.
+一张照片可以没有成员标签，也可以关联多个成员标签。
 
 ### TimelineItem
 
-Timeline items are derived from `PhotoAsset` records at runtime. The app groups photos by local capture date and sorts them by capture time. This avoids persisting duplicate timeline state.
+时间轴条目不单独持久化，而是在运行时由 `PhotoAsset` 计算得到。应用按本地拍摄日期对照片分组，并按拍摄时间排序。这样可以避免保存重复状态。
 
-## Storage
+## 本地存储
 
-Use IndexedDB for all first-version persistence. It is a better fit than `localStorage` for structured records and binary blobs.
+第一版使用 IndexedDB 作为持久化方案。相比 `localStorage`，IndexedDB 更适合保存结构化数据和二进制图片 Blob。
 
-Persist:
+需要持久化：
 
-- Trips.
-- Members.
-- Photo metadata.
-- Thumbnails.
-- Display-size image blobs suitable for in-app browsing.
+- 旅行。
+- 成员。
+- 照片元数据。
+- 缩略图。
+- 适合应用内浏览的展示尺寸图片 Blob。
 
-The first version stores thumbnails and display-size image copies, not full-resolution original photos. Browser storage can be quota-limited or cleared by the browser. The UI should make it clear that original photos should remain backed up outside the app.
+第一版保存缩略图和展示尺寸图片副本，不保存全尺寸原图作为长期归档。浏览器本地存储可能受到容量限制，也可能被浏览器清理。界面需要明确提示：原始照片应继续保存在应用外部，并做好备份。
 
-The first version may use remote map tiles through the chosen map provider. The UI should disclose that map display can request remote tile data and that the app still does not upload photos or trip records. Offline or self-hosted tiles are out of scope for the MVP.
+第一版可以使用所选地图服务的远程地图瓦片。界面需要说明：地图展示可能会请求远程瓦片数据，但应用不会上传照片或旅行记录。离线地图和自托管地图瓦片不属于 MVP 范围。
 
-The storage layer should be wrapped behind a small module so future cloud sync or export/import can be added without rewriting feature code.
+存储层应封装为独立的小模块，避免业务模块直接依赖 IndexedDB 细节。这样后续增加云同步、导出或导入时，不需要重写主要功能代码。
 
-## Interface
+## 界面结构
 
-Use a PC-first workbench layout:
+采用 PC 优先的工作台式布局：
 
-- Left panel: trip list, current trip summary, and import action.
-- Center: map view with photo points, route line, and selected-photo state.
-- Right panel: date-grouped photo timeline with thumbnails and member tags.
+- 左侧：旅行列表、当前旅行摘要和导入入口。
+- 中间：地图视图，展示照片点位、回忆路线和当前选中照片状态。
+- 右侧：按日期分组的照片时间轴，包含缩略图和成员标签。
 
-Primary states:
+主要页面状态：
 
-- No trips yet.
-- Trip created but no photos imported.
-- Import in progress.
-- Import result summary.
-- Map and timeline browsing.
-- Member tag editing.
-- Member tag filtering.
+- 还没有旅行。
+- 已创建旅行，但还没有导入照片。
+- 正在导入。
+- 导入结果摘要。
+- 地图和时间轴浏览。
+- 成员标签编辑。
+- 成员标签筛选。
 
-The timeline is the main navigation surface. The map provides spatial context and recall. Member tags support filtering and recognition, but first-version members do not have personal home pages or separate route lines.
+时间轴是第一版的主要导航界面。地图负责提供空间位置和回忆感。成员标签用于识别、筛选和回看家庭成员相关照片，但第一版不做成员个人主页，也不做每个成员的独立路线。
 
-All user-facing copy should be Chinese-first for the MVP.
+所有面向用户的界面文案默认使用中文。
 
-## Technical Architecture
+## 技术架构
 
-Use React, TypeScript, and Vite for the frontend app.
+前端应用建议使用 React、TypeScript 和 Vite。
 
-Recommended modules:
+建议模块：
 
-- `trip`: create, select, and update trips.
-- `photo-import`: read files, parse EXIF, normalize metadata, and generate thumbnails.
-- `map-view`: render photo points, route lines, and selected state.
-- `timeline`: group and render photos by date.
-- `members`: create member tags, apply tags, and filter photos.
-- `storage`: IndexedDB read/write operations.
+- `trip`：创建、选择和更新旅行。
+- `photo-import`：读取文件、解析 EXIF、规范化元数据并生成缩略图。
+- `map-view`：渲染照片点位、路线和选中状态。
+- `timeline`：按日期分组并渲染照片。
+- `members`：创建成员标签、应用标签并筛选照片。
+- `storage`：封装 IndexedDB 读写。
 
-Use a mature browser map library such as Leaflet or MapLibre. Use a proven EXIF parser instead of hand-parsing binary photo metadata.
+地图建议使用成熟的浏览器地图库，例如 Leaflet 或 MapLibre。EXIF 解析应使用成熟前端库，不手写二进制照片元数据解析逻辑。
 
-## Error Handling
+## 错误处理
 
-Import should be best-effort and batch-safe. One bad file must not stop the whole import.
+导入过程应尽量做到批量安全：单个坏文件不能中断整批导入。
 
-Handle:
+需要处理：
 
-- Missing GPS coordinates: import the photo, show it in the timeline, omit it from the map.
-- Missing capture time: import the photo with an unknown-time status and place it in a fallback timeline section.
-- EXIF parse failure: import the photo as unknown-time and no-location if the image can be decoded; include the failure in the import summary.
-- Unsupported file type: skip and report.
-- Large import batches: show progress and avoid blocking the UI where possible.
-- IndexedDB unavailable: show a blocking local-storage error.
-- Map tile failure: keep the timeline usable and show a map loading/error state.
+- 缺少 GPS 坐标：导入照片，显示在时间轴中，但不显示在地图上。
+- 缺少拍摄时间：导入照片，标记为未知时间，并放入时间轴的兜底分组。
+- EXIF 解析失败：如果图片可以解码，导入为未知时间、无位置照片，并在导入摘要中说明。
+- 不支持的文件类型：跳过并报告。
+- 大批量导入：显示进度，并尽量避免阻塞界面。
+- IndexedDB 不可用：显示阻断性本地存储错误。
+- 地图瓦片加载失败：保持时间轴可用，并显示地图加载或错误状态。
 
-## Testing And Verification
+## 测试与验收
 
-Automated tests should cover:
+自动化测试应覆盖：
 
-- EXIF metadata normalization.
-- Capture-time sorting.
-- Timeline grouping by date.
-- Member tag filtering.
-- Route point ordering.
-- IndexedDB storage read/write behavior.
+- EXIF 元数据规范化。
+- 按拍摄时间排序。
+- 按日期生成时间轴分组。
+- 成员标签筛选。
+- 路线点位排序。
+- IndexedDB 存储读写行为。
 
-Manual acceptance should verify:
+手动验收应确认：
 
-- A trip can be created.
-- A batch of original iPhone photos can be imported.
-- Geotagged photos appear on the map.
-- All imported photos appear in the timeline.
-- Map and timeline selection stay in sync.
-- Member tags can be applied and filtered.
-- Refreshing the browser preserves the trip data.
-- The app explains that original photos are not archived and that map tiles may be loaded from a remote provider.
+- 可以创建一趟旅行。
+- 可以导入一批 iPhone 原图。
+- 带坐标的照片会出现在地图上。
+- 所有已导入照片会出现在时间轴中。
+- 地图和时间轴选中状态能互相联动。
+- 可以添加并筛选成员标签。
+- 刷新浏览器后，旅行数据仍然保留。
+- 应用说明原图不会被长期归档，并说明地图瓦片可能来自远程服务。
+- 产品界面默认使用中文文案。
 
-## Open Decisions
+## 待定决策
 
-- Exact map library: Leaflet is simpler; MapLibre gives more styling control.
-- How much import progress detail the UI should show for very large batches.
-- Whether version one needs a manual "set location" action for photos missing GPS.
+- 地图库选择：Leaflet 更简单；MapLibre 有更多样式控制能力。
+- 大批量导入时需要展示多细的进度信息。
+- 第一版是否需要给缺少 GPS 的照片提供一个轻量的“设置地点”入口。
