@@ -1,7 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PhotoAsset } from "../domain/types";
+import type { Member, PhotoAsset } from "../domain/types";
 import { TimelinePanel } from "./TimelinePanel";
 
 const makePhoto = (overrides: Partial<PhotoAsset> = {}): PhotoAsset => ({
@@ -11,6 +11,15 @@ const makePhoto = (overrides: Partial<PhotoAsset> = {}): PhotoAsset => ({
   capturedAt: "2026-05-06T09:00:00.000Z",
   exifStatus: "parsed",
   memberIds: [],
+  createdAt: "2026-05-06T10:00:00.000Z",
+  ...overrides,
+});
+
+const makeMember = (overrides: Partial<Member> = {}): Member => ({
+  id: "member-1",
+  name: "妈妈",
+  color: "#2563eb",
+  avatarInitial: "妈",
   createdAt: "2026-05-06T10:00:00.000Z",
   ...overrides,
 });
@@ -47,6 +56,25 @@ describe("TimelinePanel", () => {
     );
 
     expect(screen.getByLabelText("缩略图测试.jpg 缩略图占位")).toBeInTheDocument();
+  });
+
+  it("shows only member tags attached to each photo", () => {
+    render(
+      <TimelinePanel
+        photos={[makePhoto({ id: "photo-members", fileName: "成员合影.jpg", memberIds: ["member-mom", "member-missing"] })]}
+        members={[
+          makeMember({ id: "member-mom", name: "妈妈" }),
+          makeMember({ id: "member-dad", name: "爸爸" }),
+        ]}
+        onSelectPhoto={() => undefined}
+      />,
+    );
+
+    const photoButton = screen.getByRole("button", { name: "成员合影.jpg" });
+
+    expect(within(photoButton).getByLabelText("成员标签：妈妈")).toBeInTheDocument();
+    expect(within(photoButton).queryByText("爸爸")).not.toBeInTheDocument();
+    expect(within(photoButton).queryByText("member-missing")).not.toBeInTheDocument();
   });
 
   it("shows unknown-time photos under the Chinese unknown group", () => {

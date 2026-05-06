@@ -231,9 +231,30 @@ input {
   background: #e2e8f0;
 }
 
+.timeline-photo-content {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
 .timeline-photo-name {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.timeline-member-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.timeline-member-tag {
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 12px;
+  line-height: 1;
+  padding: 5px 8px;
 }
 
 .timeline-photo:hover,

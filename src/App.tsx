@@ -36,7 +36,11 @@ export default function App() {
   const hasLocalTripChanges = useRef(false);
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId);
   const visiblePhotos = filterPhotosByMembers(photos, selectedMemberIds);
-  const selectedPhotoIds = selectedPhotoId ? [selectedPhotoId] : [];
+  const selectedVisiblePhotoId =
+    selectedPhotoId && visiblePhotos.some((photo) => photo.id === selectedPhotoId)
+      ? selectedPhotoId
+      : undefined;
+  const selectedPhotoIds = selectedVisiblePhotoId ? [selectedVisiblePhotoId] : [];
 
   useEffect(() => {
     let isMounted = true;
@@ -150,7 +154,8 @@ export default function App() {
         {selectedTrip ? (
           <TimelinePanel
             photos={visiblePhotos}
-            selectedPhotoId={selectedPhotoId}
+            members={members}
+            selectedPhotoId={selectedVisiblePhotoId}
             onSelectPhoto={setSelectedPhotoId}
           />
         ) : (
