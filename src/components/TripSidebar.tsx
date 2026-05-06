@@ -7,7 +7,7 @@ interface TripSidebarProps {
   selectedTripId?: string;
   onSelectTrip: (tripId: string) => void;
   onCreateTrip: (name: string) => void | Promise<void>;
-  onImportFiles?: (tripId: string, files: FileList) => void;
+  onImportFiles?: (tripId: string, files: FileList) => void | Promise<void>;
 }
 
 export const TripSidebar = ({

@@ -390,6 +390,22 @@ input {
   padding-top: 20px;
 }
 
+.import-status,
+.import-error {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.import-status {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.import-error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 .import-summary dl {
   display: grid;
   gap: 10px;

@@ -6,7 +6,8 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { TripSidebar } from "./components/TripSidebar";
 import { filterPhotosByMembers } from "./domain/members";
 import type { Member, PhotoAsset, Trip } from "./domain/types";
-import { listTrips, saveTrip } from "./storage/repositories";
+import { importPhotos, type ImportSummary as ImportSummaryData } from "./photo-import/importPhotos";
+import { listPhotosByTrip, listTrips, savePhotos, saveTrip } from "./storage/repositories";
 
 const emptyImportSummary = {
   importedCount: 0,
@@ -34,6 +35,9 @@ export default function App() {
   const [selectedPhotoId, setSelectedPhotoId] = useState<string>();
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [tripLoadState, setTripLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const [importState, setImportState] = useState<"idle" | "importing" | "error">("idle");
+  const [importError, setImportError] = useState<string>();
+  const [lastImportSummary, setLastImportSummary] = useState<ImportSummaryData>();
   const hasLocalTripChanges = useRef(false);
   const selectedTrip = trips.find((trip) => trip.id === selectedTripId);
   const visiblePhotos = filterPhotosByMembers(photos, selectedMemberIds);
@@ -69,6 +73,36 @@ export default function App() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!selectedTripId) {
+      setPhotos([]);
+      setSelectedPhotoId(undefined);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    listPhotosByTrip(selectedTripId)
+      .then((storedPhotos) => {
+        if (isMounted) {
+          setPhotos(storedPhotos);
+          setSelectedPhotoId(undefined);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setPhotos([]);
+          setSelectedPhotoId(undefined);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedTripId]);
 
   const handleCreateTrip = async (name: string) => {
     const now = new Date().toISOString();
@@ -124,6 +158,25 @@ export default function App() {
     );
   };
 
+  const handleImportFiles = async (tripId: string, files: FileList) => {
+    setImportState("importing");
+    setImportError(undefined);
+
+    try {
+      const result = await importPhotos(tripId, files);
+
+      await savePhotos(result.photos);
+      const storedPhotos = await listPhotosByTrip(tripId);
+
+      setPhotos(storedPhotos);
+      setLastImportSummary(result.summary);
+      setImportState("idle");
+    } catch {
+      setImportError("照片导入失败，请重试。");
+      setImportState("error");
+    }
+  };
+
   return (
     <main className="app-shell">
       <TripSidebar
@@ -131,6 +184,7 @@ export default function App() {
         selectedTripId={selectedTripId}
         onSelectTrip={setSelectedTripId}
         onCreateTrip={handleCreateTrip}
+        onImportFiles={selectedTripId ? handleImportFiles : undefined}
       />
 
       <section className="map-workspace" aria-labelledby="app-title">
@@ -167,7 +221,11 @@ export default function App() {
         ) : (
           <p className="empty-copy">暂无旅行。</p>
         )}
-        <ImportSummary summary={emptyImportSummary} />
+        <ImportSummary
+          errorMessage={importError}
+          isImporting={importState === "importing"}
+          summary={lastImportSummary ?? emptyImportSummary}
+        />
       </section>
     </main>
   );
