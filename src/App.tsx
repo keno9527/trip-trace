@@ -7,7 +7,14 @@ import { TripSidebar } from "./components/TripSidebar";
 import { filterPhotosByMembers } from "./domain/members";
 import type { Member, PhotoAsset, Trip } from "./domain/types";
 import { importPhotos, type ImportSummary as ImportSummaryData } from "./photo-import/importPhotos";
-import { listPhotosByTrip, listTrips, savePhotos, saveTrip } from "./storage/repositories";
+import {
+  listMembers,
+  listPhotosByTrip,
+  listTrips,
+  saveMember,
+  savePhotos,
+  saveTrip,
+} from "./storage/repositories";
 
 const emptyImportSummary = {
   importedCount: 0,
@@ -54,11 +61,13 @@ export default function App() {
   useEffect(() => {
     let isMounted = true;
 
-    listTrips()
-      .then((storedTrips) => {
+    Promise.all([listTrips(), listMembers()])
+      .then(([storedTrips, storedMembers]) => {
         if (!isMounted) {
           return;
         }
+
+        setMembers(storedMembers);
 
         if (!hasLocalTripChanges.current) {
           setTrips(storedTrips);
@@ -137,7 +146,7 @@ export default function App() {
     setSelectedTripId(trip.id);
   };
 
-  const handleCreateMember = (name: string) => {
+  const handleCreateMember = async (name: string) => {
     const now = new Date().toISOString();
     const member: Member = {
       id: `member-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -147,6 +156,7 @@ export default function App() {
       createdAt: now,
     };
 
+    await saveMember(member);
     setMembers((currentMembers) => [...currentMembers, member]);
   };
 
@@ -158,21 +168,26 @@ export default function App() {
     );
   };
 
-  const handleApplyMemberToSelection = (memberId: string, photoIds: string[]) => {
+  const handleApplyMemberToSelection = async (memberId: string, photoIds: string[]) => {
     const selectedPhotoIdSet = new Set(photoIds);
+    const updatedPhotos = photos.map((photo) => {
+      if (!selectedPhotoIdSet.has(photo.id) || photo.memberIds.includes(memberId)) {
+        return photo;
+      }
 
-    setPhotos((currentPhotos) =>
-      currentPhotos.map((photo) => {
-        if (!selectedPhotoIdSet.has(photo.id) || photo.memberIds.includes(memberId)) {
-          return photo;
-        }
-
-        return {
-          ...photo,
-          memberIds: [...photo.memberIds, memberId],
-        };
-      }),
+      return {
+        ...photo,
+        memberIds: [...photo.memberIds, memberId],
+      };
+    });
+    const changedPhotos = updatedPhotos.filter(
+      (photo, index) => photo !== photos[index],
     );
+
+    if (changedPhotos.length > 0) {
+      await savePhotos(changedPhotos);
+      setPhotos(updatedPhotos);
+    }
   };
 
   const handleImportFiles = async (tripId: string, files: FileList) => {

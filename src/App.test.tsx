@@ -2,11 +2,13 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import type { PhotoAsset, Trip } from "./domain/types";
+import type { Member, PhotoAsset, Trip } from "./domain/types";
 import { importPhotos } from "./photo-import/importPhotos";
 import {
+  listMembers,
   listPhotosByTrip,
   listTrips,
+  saveMember,
   savePhotos,
   saveTrip,
 } from "./storage/repositories";
@@ -51,15 +53,19 @@ vi.mock("./photo-import/importPhotos", () => ({
 }));
 
 vi.mock("./storage/repositories", () => ({
+  listMembers: vi.fn(),
   listPhotosByTrip: vi.fn(),
   listTrips: vi.fn(),
+  saveMember: vi.fn(),
   savePhotos: vi.fn(),
   saveTrip: vi.fn(),
 }));
 
 const mockedImportPhotos = vi.mocked(importPhotos);
+const mockedListMembers = vi.mocked(listMembers);
 const mockedListPhotosByTrip = vi.mocked(listPhotosByTrip);
 const mockedListTrips = vi.mocked(listTrips);
+const mockedSaveMember = vi.mocked(saveMember);
 const mockedSavePhotos = vi.mocked(savePhotos);
 const mockedSaveTrip = vi.mocked(saveTrip);
 
@@ -85,6 +91,15 @@ const makePhoto = (overrides: Partial<PhotoAsset> = {}): PhotoAsset => ({
   ...overrides,
 });
 
+const makeMember = (overrides: Partial<Member> = {}): Member => ({
+  id: "member-1",
+  name: "妈妈",
+  color: "#2563eb",
+  avatarInitial: "妈",
+  createdAt: "2026-05-06T10:00:00.000Z",
+  ...overrides,
+});
+
 const createDeferred = <T,>() => {
   let resolve: (value: T) => void = () => undefined;
   let reject: (error: unknown) => void = () => undefined;
@@ -99,13 +114,17 @@ const createDeferred = <T,>() => {
 beforeEach(() => {
   mapViewSnapshots.length = 0;
   mockedImportPhotos.mockReset();
+  mockedListMembers.mockReset();
   mockedListPhotosByTrip.mockReset();
   mockedListTrips.mockReset();
+  mockedSaveMember.mockReset();
   mockedSavePhotos.mockReset();
   mockedSaveTrip.mockReset();
 
+  mockedListMembers.mockResolvedValue([]);
   mockedListTrips.mockResolvedValue([]);
   mockedListPhotosByTrip.mockResolvedValue([]);
+  mockedSaveMember.mockResolvedValue();
   mockedSavePhotos.mockResolvedValue();
   mockedSaveTrip.mockResolvedValue();
 });
@@ -297,5 +316,53 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "地图照片：西湖旧导入.jpg" })).not.toBeInTheDocument();
     expect(screen.getByText("上海周末游 的地图将在这里展示。")).toBeInTheDocument();
     expect(screen.getAllByText("0")).toHaveLength(5);
+  });
+
+  it("loads and saves member tags locally", async () => {
+    const user = userEvent.setup();
+    const trip = makeTrip();
+    const member = makeMember({ id: "member-mom", name: "妈妈" });
+
+    mockedListTrips.mockResolvedValue([trip]);
+    mockedListMembers.mockResolvedValue([member]);
+
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "妈妈" })).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("成员名称"), "爸爸");
+    await user.click(screen.getByRole("button", { name: "添加成员" }));
+
+    expect(mockedSaveMember).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "爸爸",
+        avatarInitial: "爸",
+      }),
+    );
+    expect(screen.getByRole("button", { name: "爸爸" })).toBeInTheDocument();
+  });
+
+  it("persists member tags applied to selected photos", async () => {
+    const user = userEvent.setup();
+    const trip = makeTrip();
+    const member = makeMember({ id: "member-mom", name: "妈妈" });
+    const photo = makePhoto({ id: "photo-family", fileName: "合影.jpg" });
+
+    mockedListTrips.mockResolvedValue([trip]);
+    mockedListMembers.mockResolvedValue([member]);
+    mockedListPhotosByTrip.mockResolvedValue([photo]);
+
+    render(<App />);
+
+    await user.click(await screen.findByRole("button", { name: "合影.jpg" }));
+    await user.click(screen.getByRole("button", { name: "添加到 妈妈" }));
+
+    expect(mockedSavePhotos).toHaveBeenCalledWith([
+      {
+        ...photo,
+        memberIds: ["member-mom"],
+      },
+    ]);
+    expect(screen.getByLabelText("成员标签：妈妈")).toBeInTheDocument();
   });
 });

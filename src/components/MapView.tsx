@@ -24,11 +24,23 @@ const hasCoordinates = (
 const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 const tileAttribution = "&copy; OpenStreetMap contributors";
 
-const MapViewportSync = ({ positions }: { positions: LatLngTuple[] }) => {
+const MapViewportSync = ({
+  positions,
+  selectedPosition,
+}: {
+  positions: LatLngTuple[];
+  selectedPosition?: LatLngTuple;
+}) => {
   const map = useMap();
   const positionKey = positions.map((position) => position.join(",")).join("|");
+  const selectedPositionKey = selectedPosition?.join(",");
 
   useEffect(() => {
+    if (selectedPosition) {
+      map.setView(selectedPosition, 13);
+      return;
+    }
+
     if (positions.length === 0) {
       return;
     }
@@ -39,7 +51,7 @@ const MapViewportSync = ({ positions }: { positions: LatLngTuple[] }) => {
     }
 
     map.fitBounds(positions, { padding: [24, 24] });
-  }, [map, positionKey]);
+  }, [map, positionKey, selectedPosition, selectedPositionKey]);
 
   return null;
 };
@@ -62,6 +74,12 @@ export const MapView = ({ photos, selectedPhotoId, onSelectPhoto }: MapViewProps
     geotaggedPhotos.length > 0
       ? [geotaggedPhotos[0].latitude, geotaggedPhotos[0].longitude]
       : [35.8617, 104.1954];
+  const selectedGeotaggedPhoto = geotaggedPhotos.find(
+    (photo) => photo.id === selectedPhotoId,
+  );
+  const selectedPosition: LatLngTuple | undefined = selectedGeotaggedPhoto
+    ? [selectedGeotaggedPhoto.latitude, selectedGeotaggedPhoto.longitude]
+    : undefined;
 
   return (
     <div className="map-view">
@@ -71,7 +89,7 @@ export const MapView = ({ photos, selectedPhotoId, onSelectPhoto }: MapViewProps
         scrollWheelZoom={false}
         zoom={geotaggedPhotos.length > 0 ? 12 : 4}
       >
-        <MapViewportSync positions={geotaggedPositions} />
+        <MapViewportSync positions={geotaggedPositions} selectedPosition={selectedPosition} />
         <TileLayer attribution={tileAttribution} url={tileUrl} />
         {routePositions.length > 1 ? (
           <Polyline className="map-route-line" positions={routePositions} />

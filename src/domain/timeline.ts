@@ -10,7 +10,13 @@ const UNKNOWN_TIME_LABEL = "未知时间";
 const hasExplicitTimezone = (capturedAt: string): boolean =>
   /(?:Z|[+-]\d{2}:\d{2})$/u.test(capturedAt);
 
-const formatCaptureDate = (capturedAt: string): string => {
+const formatCaptureDate = (photo: PhotoAsset & { capturedAt: string }): string => {
+  if (photo.capturedDate) {
+    return photo.capturedDate;
+  }
+
+  const { capturedAt } = photo;
+
   if (hasExplicitTimezone(capturedAt)) {
     return new Date(capturedAt).toISOString().slice(0, 10);
   }
@@ -49,7 +55,7 @@ export const groupPhotosByDate = (
   const groups = new Map<string, PhotoAsset[]>();
 
   for (const photo of datedPhotos) {
-    const dateLabel = formatCaptureDate(photo.capturedAt);
+    const dateLabel = formatCaptureDate(photo);
     const groupPhotos = groups.get(dateLabel) ?? [];
 
     groups.set(dateLabel, [...groupPhotos, photo]);

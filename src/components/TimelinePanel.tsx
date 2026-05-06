@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { groupPhotosByDate } from "../domain/timeline";
 import type { Member, PhotoAsset } from "../domain/types";
 
@@ -16,6 +17,26 @@ export const TimelinePanel = ({
 }: TimelinePanelProps) => {
   const photoGroups = groupPhotosByDate(photos);
   const membersById = new Map(members.map((member) => [member.id, member]));
+  const photoPreviewUrls = useMemo(
+    () =>
+      new Map(
+        photos
+          .map((photo) => {
+            const blob = photo.thumbnailBlob ?? photo.displayBlob;
+
+            return blob ? [photo.id, URL.createObjectURL(blob)] : undefined;
+          })
+          .filter((entry): entry is [string, string] => Boolean(entry)),
+      ),
+    [photos],
+  );
+
+  useEffect(
+    () => () => {
+      photoPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    },
+    [photoPreviewUrls],
+  );
 
   if (photoGroups.length === 0) {
     return <p className="empty-copy">导入照片后会按拍摄日期显示在这里。</p>;
@@ -36,6 +57,7 @@ export const TimelinePanel = ({
               const photoMembers = photo.memberIds
                 .map((memberId) => membersById.get(memberId))
                 .filter((member): member is Member => Boolean(member));
+              const previewUrl = photoPreviewUrls.get(photo.id);
 
               return (
                 <button
@@ -50,10 +72,18 @@ export const TimelinePanel = ({
                   aria-label={photo.fileName}
                   onClick={() => onSelectPhoto(photo.id)}
                 >
-                  <span
-                    className="timeline-photo-thumb"
-                    aria-label={`${photo.fileName} 缩略图占位`}
-                  />
+                  {previewUrl ? (
+                    <img
+                      className="timeline-photo-thumb"
+                      src={previewUrl}
+                      alt={`${photo.fileName} 缩略图`}
+                    />
+                  ) : (
+                    <span
+                      className="timeline-photo-thumb"
+                      aria-label={`${photo.fileName} 缩略图占位`}
+                    />
+                  )}
                   <span className="timeline-photo-content">
                     <span className="timeline-photo-name">{photo.fileName}</span>
                     {photoMembers.length > 0 ? (

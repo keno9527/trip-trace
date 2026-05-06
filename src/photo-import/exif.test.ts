@@ -27,8 +27,22 @@ describe("parsePhotoExif", () => {
     await expect(parsePhotoExif(makeFile())).resolves.toEqual({
       exifStatus: "parsed",
       capturedAt: "2026-05-06T10:30:00.000Z",
+      capturedDate: "2026-05-06",
       latitude: 31.2304,
       longitude: 121.4737,
+    });
+  });
+
+  it("preserves the local EXIF shooting date for timezone-free strings", async () => {
+    parseExif.mockResolvedValue({
+      DateTimeOriginal: "2026:05:06 00:30:00",
+      latitude: 31.2304,
+      longitude: 121.4737,
+    });
+
+    await expect(parsePhotoExif(makeFile())).resolves.toMatchObject({
+      exifStatus: "parsed",
+      capturedDate: "2026-05-06",
     });
   });
 
@@ -40,6 +54,7 @@ describe("parsePhotoExif", () => {
     await expect(parsePhotoExif(makeFile())).resolves.toEqual({
       exifStatus: "missing-gps",
       capturedAt: "2026-05-06T10:30:00.000Z",
+      capturedDate: "2026-05-06",
     });
   });
 

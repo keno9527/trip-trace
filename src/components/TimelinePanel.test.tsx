@@ -24,8 +24,13 @@ const makeMember = (overrides: Partial<Member> = {}): Member => ({
   ...overrides,
 });
 
+const objectUrlSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview");
+const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+
 afterEach(() => {
   cleanup();
+  objectUrlSpy.mockClear();
+  revokeObjectUrlSpy.mockClear();
 });
 
 describe("TimelinePanel", () => {
@@ -56,6 +61,26 @@ describe("TimelinePanel", () => {
     );
 
     expect(screen.getByLabelText("缩略图测试.jpg 缩略图占位")).toBeInTheDocument();
+  });
+
+  it("renders stored thumbnail blobs as image previews", () => {
+    render(
+      <TimelinePanel
+        photos={[
+          makePhoto({
+            id: "photo-preview",
+            fileName: "真实缩略图.jpg",
+            thumbnailBlob: new Blob(["preview"], { type: "image/jpeg" }),
+          }),
+        ]}
+        onSelectPhoto={() => undefined}
+      />,
+    );
+
+    const image = screen.getByRole("img", { name: "真实缩略图.jpg 缩略图" });
+
+    expect(image).toHaveAttribute("src", "blob:preview");
+    expect(objectUrlSpy).toHaveBeenCalledWith(expect.any(Blob));
   });
 
   it("shows only member tags attached to each photo", () => {

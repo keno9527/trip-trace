@@ -206,6 +206,29 @@ describe("MapView", () => {
     );
   });
 
+  it("moves the viewport to the selected geotagged photo", () => {
+    render(
+      <MapView
+        photos={[
+          makePhoto({
+            id: "photo-first",
+            latitude: 30.24,
+            longitude: 120.16,
+          }),
+          makePhoto({
+            id: "photo-selected",
+            latitude: 30.26,
+            longitude: 120.18,
+          }),
+        ]}
+        selectedPhotoId="photo-selected"
+        onSelectPhoto={() => undefined}
+      />,
+    );
+
+    expect(mapControls.setView).toHaveBeenCalledWith([30.26, 120.18], 13);
+  });
+
   it("shows a Chinese privacy notice for remote map tiles", () => {
     render(<MapView photos={[makePhoto()]} onSelectPhoto={() => undefined} />);
 

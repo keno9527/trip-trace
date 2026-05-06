@@ -17,6 +17,7 @@ export interface PhotoAsset {
   tripId: string;
   fileName: string;
   capturedAt?: string;
+  capturedDate?: string;
   latitude?: number;
   longitude?: number;
   thumbnailBlob?: Blob;

@@ -42,6 +42,18 @@ describe("groupPhotosByDate", () => {
     expect(groups.map((group) => group.dateLabel)).toEqual(["2026-05-06"]);
   });
 
+  it("uses capturedDate to preserve the original EXIF local shooting date", () => {
+    const groups = groupPhotosByDate([
+      makePhoto({
+        id: "late-night-local",
+        capturedAt: "2026-05-05T16:30:00.000Z",
+        capturedDate: "2026-05-06",
+      }),
+    ]);
+
+    expect(groups.map((group) => group.dateLabel)).toEqual(["2026-05-06"]);
+  });
+
   it("sorts photos on the same date by capturedAt ascending", () => {
     const groups = groupPhotosByDate([
       makePhoto({

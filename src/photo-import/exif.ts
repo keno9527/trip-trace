@@ -4,15 +4,26 @@ import type { ExifStatus } from "../domain/types";
 export interface ParsedPhotoExif {
   exifStatus: ExifStatus;
   capturedAt?: string;
+  capturedDate?: string;
   latitude?: number;
   longitude?: number;
 }
 
 type ExifTags = Record<string, unknown>;
 
-const normalizeDate = (value: unknown): string | undefined => {
+interface NormalizedCaptureTime {
+  capturedAt: string;
+  capturedDate: string;
+}
+
+const normalizeDate = (value: unknown): NormalizedCaptureTime | undefined => {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString();
+    const capturedAt = value.toISOString();
+
+    return {
+      capturedAt,
+      capturedDate: capturedAt.slice(0, 10),
+    };
   }
 
   if (typeof value !== "string") {
@@ -21,8 +32,14 @@ const normalizeDate = (value: unknown): string | undefined => {
 
   const normalizedExifDate = value.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
   const date = new Date(normalizedExifDate);
+  const capturedDate = normalizedExifDate.slice(0, 10);
 
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  return Number.isNaN(date.getTime())
+    ? undefined
+    : {
+        capturedAt: date.toISOString(),
+        capturedDate,
+      };
 };
 
 const decimalFromDms = (value: number[]): number | undefined => {
@@ -50,7 +67,7 @@ const normalizeCoordinate = (value: unknown, ref: unknown): number | undefined =
   return ref === "S" || ref === "W" ? -Math.abs(coordinate) : coordinate;
 };
 
-const getCapturedAt = (tags: ExifTags): string | undefined =>
+const getCaptureTime = (tags: ExifTags): NormalizedCaptureTime | undefined =>
   normalizeDate(
     tags.DateTimeOriginal ??
       tags.CreateDate ??
@@ -75,10 +92,10 @@ export const parsePhotoExif = async (file: File): Promise<ParsedPhotoExif> => {
       reviveValues: true,
     })) as ExifTags | undefined;
 
-    const capturedAt = getCapturedAt(tags ?? {});
+    const captureTime = getCaptureTime(tags ?? {});
     const coordinates = getCoordinates(tags ?? {});
 
-    if (!capturedAt) {
+    if (!captureTime) {
       return {
         exifStatus: "missing-time",
         ...coordinates,
@@ -88,13 +105,13 @@ export const parsePhotoExif = async (file: File): Promise<ParsedPhotoExif> => {
     if (coordinates.latitude === undefined || coordinates.longitude === undefined) {
       return {
         exifStatus: "missing-gps",
-        capturedAt,
+        ...captureTime,
       };
     }
 
     return {
       exifStatus: "parsed",
-      capturedAt,
+      ...captureTime,
       ...coordinates,
     };
   } catch {
