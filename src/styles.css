@@ -1,6 +1,6 @@
 :root {
   color: #1f2933;
-  background: #f6f7f9;
+  background: #eef1f5;
   font-family:
     Inter, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui,
     sans-serif;
@@ -20,31 +20,184 @@ body {
   margin: 0;
 }
 
+button,
+input {
+  font: inherit;
+}
+
 button {
   border: 1px solid #2563eb;
   border-radius: 6px;
   background: #2563eb;
   color: #fff;
   cursor: pointer;
-  font: inherit;
   padding: 10px 16px;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+  padding: 10px 12px;
 }
 
 .app-shell {
   display: grid;
+  grid-template-columns: 280px minmax(420px, 1fr) 320px;
   min-height: 100vh;
-  place-items: center;
-  padding: 48px;
+  background: #eef1f5;
 }
 
-.empty-state {
+.trip-sidebar,
+.timeline-workspace {
+  background: #fff;
+}
+
+.trip-sidebar {
   display: grid;
-  gap: 20px;
-  justify-items: center;
+  align-content: start;
+  gap: 28px;
+  border-right: 1px solid #d8dee8;
+  padding: 24px;
 }
 
-.empty-state h1 {
+.sidebar-brand {
+  display: grid;
+  gap: 4px;
+}
+
+.sidebar-brand p,
+.map-workspace h1,
+.trip-list-section h2,
+.import-entry h2,
+.timeline-workspace h2,
+.import-summary h2 {
   margin: 0;
-  font-size: 48px;
+}
+
+.sidebar-brand p {
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.sidebar-brand span,
+.empty-copy,
+.map-workspace p,
+.timeline-workspace p {
+  color: #64748b;
+}
+
+.create-trip-form,
+.trip-list-section,
+.import-entry,
+.timeline-workspace,
+.import-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.create-trip-form label {
+  color: #334155;
+  font-weight: 600;
+}
+
+.trip-list-section h2,
+.import-entry h2,
+.timeline-workspace h2,
+.import-summary h2 {
+  color: #0f172a;
+  font-size: 18px;
+}
+
+.empty-copy {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.trip-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-list-item {
+  width: 100%;
+  border-color: transparent;
+  background: #f1f5f9;
+  color: #1e293b;
+  text-align: left;
+}
+
+.trip-list-item:hover,
+.trip-list-item.is-selected {
+  border-color: #2563eb;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.file-import-label {
+  display: grid;
+  gap: 10px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.file-import-label input {
+  color: #475569;
+}
+
+.map-workspace {
+  display: grid;
+  place-items: center;
+  border-right: 1px solid #d8dee8;
+  padding: 32px;
+  text-align: center;
+}
+
+.map-workspace h1 {
+  color: #0f172a;
+  font-size: 40px;
+}
+
+.timeline-workspace {
+  align-content: start;
+  padding: 24px;
+}
+
+.import-summary {
+  margin-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 20px;
+}
+
+.import-summary dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.import-summary dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.import-summary dt {
+  color: #475569;
+}
+
+.import-summary dd {
+  margin: 0;
+  color: #0f172a;
   font-weight: 700;
 }
